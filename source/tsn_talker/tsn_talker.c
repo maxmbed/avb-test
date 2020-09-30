@@ -39,6 +39,9 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <errno.h>
+
+#include "log.h"
 
 #define MAGIC 0xCC
 
@@ -68,7 +71,7 @@ static error_t parser(int key, char *arg, struct argp_state *state)
                     &macaddr[0], &macaddr[1], &macaddr[2],
                     &macaddr[3], &macaddr[4], &macaddr[5]);
         if (res != 6) {
-            printf("Invalid address\n");
+            err("Invalid address\n");
             exit(EXIT_FAILURE);
         }
 
@@ -107,14 +110,14 @@ int main(int argc, char *argv[])
 
     fd = socket(AF_PACKET, SOCK_DGRAM, htons(ETH_P_TSN));
     if (fd < 0) {
-        perror("Couldn't open socket");
+        err("Couldn't open socket: %s\n", strerror(errno));
         return 1;
     }
 
     strncpy(req.ifr_name, (char*)ifname, sizeof(req.ifr_name));
     res = ioctl(fd, SIOCGIFINDEX, &req);
     if (res < 0) {
-        perror("Couldn't get interface index");
+        err("Couldn't get interface index %s\n", strerror(errno));
         goto err;
     }
 
@@ -125,7 +128,7 @@ int main(int argc, char *argv[])
         res = setsockopt(fd, SOL_SOCKET, SO_PRIORITY, &priority,
                             sizeof(priority));
         if (res < 0) {
-            perror("Couldn't set priority");
+            err("Couldn't set priority: %s\n", strerror(errno));
             goto err;
         }
 
@@ -134,7 +137,7 @@ int main(int argc, char *argv[])
     data = alloca(size);
     memset(data, MAGIC, size);
 
-    printf("Sending packets...\n");
+    info("Sending packets...\n");
 
     while (1) {
         uint64_t *seq_ptr = (uint64_t *) &data[0];
@@ -145,7 +148,7 @@ int main(int argc, char *argv[])
         n = sendto(fd, data, size, 0, (struct sockaddr *) &sk_addr,
                             sizeof(sk_addr));
         if (n < 0)
-            perror("Failed to send data");
+            err("Failed to send data: %s\n", strerror(errno));
 
         if (delay > 0)
             usleep((unsigned int)delay);
