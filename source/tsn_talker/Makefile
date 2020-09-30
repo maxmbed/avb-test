@@ -9,6 +9,7 @@ all: $(BINARY_NAME)
 
 CFLAGS  += -Dposix -ggdb -O2 -Wall -Wlogical-op -Wtype-limits -Wsign-compare -Wshadow -Wpointer-arith -Wstrict-prototypes -I . -I $(SDKTARGETSYSROOT)/usr/include
 LDFLAGS += -L $(SDKTARGETSYSROOT)/usr/lib
+LDFLAGS += -lsndfile
 
 $(BINARY_NAME): $(BINARY_NAME).o log.o
 	$(CC) $(LDFLAGS) $^ -o $@
